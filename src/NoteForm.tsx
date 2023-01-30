@@ -1,17 +1,21 @@
-import { useRef, useState } from "react"
+import { FormEvent, useRef, useState} from "react"
 import { Button, Col, Form, Row, Stack } from "react-bootstrap"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import CreatableReactSelect from "react-select/creatable"
 import { NoteData, Tag } from "./App"
+import { v4 as uuidV4 } from "uuid"
 
 type NoteFormProps = {
     onSubmit: (data: NoteData) => void //void: expect nothing in return
+    onAddTag: (tag: Tag) => void
+    availableTags: Tag[]
 }
 
-export function NoteForm({ onSubmit }: NoteFormProps) {
+export function NoteForm({ onSubmit, onAddTag, availableTags }: NoteFormProps) {
     const titleRef = useRef<HTMLInputElement>(null)
     const markdownRef = useRef<HTMLTextAreaElement>(null)
     const [selectedTags, setSelectedTags] = useState<Tag[]>([])
+    const navigate = useNavigate()
 
     function handleSubmit(e: FormEvent) {
         e.preventDefault()
@@ -19,8 +23,9 @@ export function NoteForm({ onSubmit }: NoteFormProps) {
         onSubmit({
             title: titleRef.current!.value, //even though this value could be null, with '!' we're saying it's never going to be null 
             markdown: markdownRef.current!.value,
-            tags: []
+            tags: selectedTags, 
         })
+        navigate("..")
     }
 
     return (
@@ -36,9 +41,17 @@ export function NoteForm({ onSubmit }: NoteFormProps) {
                     <Col>
                         <Form.Group controlId="tags">
                             <Form.Label>Tags</Form.Label>
-                            <CreatableReactSelect 
+                            <CreatableReactSelect
+                                onCreateOption = {label => {
+                                    const newTag = { id: uuidV4(), label }
+                                    onAddTag(newTag) // to make sure we add to the local storage, function on the App.tsx
+                                    setSelectedTags(prev => [...prev, newTag])
+                                }}
                                 value={selectedTags.map(tag => { //like you would expect from an option inside of a select
                                     return { label: tag.label, value: tag.id }
+                                })}
+                                options={availableTags.map(tag => {
+                                    return { label: tag.label, value: tag.id}
                                 })}
                                 onChange={tags => {
                                     setSelectedTags(

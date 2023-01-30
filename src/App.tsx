@@ -3,6 +3,7 @@ import { useMemo } from "react"
 import { Container } from "react-bootstrap"
 import { Routes, Route, Navigate } from "react-router-dom"
 import { NewNote } from "./NewNote"
+import { NoteList } from "./NoteList"
 import { useLocalStorage } from "./useLocalStorage"
 import { v4 as uuidV4 } from "uuid"
 
@@ -34,34 +35,40 @@ export type Tag = {
 
 function App() { 
   const [notes, setNotes] = useLocalStorage<RawNote[]>("NOTES", [])
-  //localStorage to persist the information
   const [tags, setTags] = useLocalStorage<Tag[]>("TAGS", [])
 
   //convert raw notes into real notes
   const notesWithTags = useMemo(() => {
-    //loop through all my different notes
     return notes.map(note => {
-      //for each note in keep all the information about the notes but also get the tags that have all the associated ID inside of the note that's being stored
-      return {...note, tags: tags.filter(tag => note.tagIds.includes(tag.id))
-      }
+      return { ...note, tags: tags.filter(tag => note.tagIds.includes(tag.id)) }
     })
-  }, [notes, tags]) //just run when the notes or tags get updated
+  }, [notes, tags])
 
-  //function to create notes
-  function onCreateNotes({tags, ...data}: NoteData) {
+  function onCreateNote({ tags, ...data }: NoteData) {
     setNotes(prevNotes => {
       return [
-        ...prevNotes, 
-        {...data, id: uuidV4(), tagsIds: tags.map(tag => tag.id) },
+        ...prevNotes,
+        { ...data, id: uuidV4(), tagIds: tags.map(tag => tag.id) },
       ]
     })
   }
 
+  function addTag(tag: Tag) {
+    setTags(prev => [...prev, tag])
+  }
   return (
     <Container className="my-4">
       <Routes>
-        <Route path="/" element={<h1>Home</h1>} />
-        <Route path="/new" element={<NewNote />} />
+        <Route path="/" element={< NoteList />} />
+        <Route path="/new" 
+          element={
+            <NewNote 
+              onSubmit={onCreateNote} 
+              onAddTag={addTag} 
+              availableTags={tags} 
+            />
+          } 
+        />
         <Route path="/:id">
           <Route index element={<h1>Show</h1>} />
           <Route path="edit" element={<h1>Edit</h1>} />
