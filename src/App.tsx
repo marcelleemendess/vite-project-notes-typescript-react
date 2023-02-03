@@ -4,6 +4,9 @@ import { Container } from "react-bootstrap"
 import { Routes, Route, Navigate } from "react-router-dom"
 import { NewNote } from "./NewNote"
 import { NoteList } from "./NoteList"
+import { NoteLayout } from "./NoteLayout"
+import { Note } from "./Note"
+import { EditNote } from "./EditNote"
 import { useLocalStorage } from "./useLocalStorage"
 import { v4 as uuidV4 } from "uuid"
 
@@ -53,13 +56,25 @@ function App() {
     })
   }
 
+  function onUpdateNote(id: string, { tags, ...data}: NoteData) {
+    setNotes(prevNotes => {
+      return prevNotes.map(note => {
+        if (note.id === id) {
+          return { ...note, ...data, tagIds: tags.map(tag => tag.id) }
+        } else {
+          return note
+        }
+      })
+    })
+  }
+
   function addTag(tag: Tag) {
     setTags(prev => [...prev, tag])
   }
   return (
     <Container className="my-4">
       <Routes>
-        <Route path="/" element={< NoteList />} />
+        <Route path="/" element={< NoteList notes={notesWithTags} availableTags={tags} />} />
         <Route path="/new" 
           element={
             <NewNote 
@@ -69,9 +84,15 @@ function App() {
             />
           } 
         />
-        <Route path="/:id">
-          <Route index element={<h1>Show</h1>} />
-          <Route path="edit" element={<h1>Edit</h1>} />
+        <Route path="/:id" element={<NoteLayout notes={notesWithTags} />}>
+          <Route index element={<Note />} />
+          <Route path="edit" element={
+              <EditNote
+                onSubmit={onUpdateNote} 
+                onAddTag={addTag} 
+                availableTags={tags}  
+              />
+            }/>
         </Route>
         {/* Navigate comp. to when the user navigate to a url unavailable, navigates back */}
         <Route path="*" element={<Navigate to="/"/>} />
